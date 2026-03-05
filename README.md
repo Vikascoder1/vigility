@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Vigility – Self‑Tracking Product Analytics Dashboard
 
-## Getting Started
+This app is a product analytics dashboard built with **Next.js**.  
+It tracks its **own usage**: every filter change and chart click is stored and then visualized.
 
-First, run the development server:
+---
+
+## 1. Run the app locally
+
+### Prerequisites
+
+- Node.js 18+
+- A PostgreSQL database (Neon, Vercel Postgres, etc.)
+
+### Environment
+
+Create `.env` in the `vigility` folder:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DBNAME?sslmode=require"
+JWT_SECRET="your-long-random-secret"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Install, migrate, seed, run
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cd vigility
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+npm install
+npx prisma migrate dev --name init
+npm run seed
+npm run dev
+```
 
-## Learn More
+Visit `http://localhost:3000/login`, register a user, and you’ll be redirected to the dashboard.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 2. Architecture overview
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Frontend**
+  - Next.js App Router (`app/`).
+  - Login/register page with client‑side validation (Zod) and JWT‑based auth.
+  - Dashboard page with:
+    - Filters (date range, age, gender) stored in cookies.
+    - Recharts bar + line charts that visualize feature usage.
+    - Mobile‑first, responsive layout.
 
-## Deploy on Vercel
+- **Backend**
+  - Next.js API routes under `app/api/*`.
+  - **Prisma + PostgreSQL** for data access.
+  - JWT authentication with HTTP‑only cookies.
+  - Core endpoints:
+    - `POST /api/register` – create user, issue JWT.
+    - `POST /api/login` – verify user, issue JWT.
+    - `POST /api/track` – store a feature click (e.g. `date_picker`, `filter_age`, `chart_bar`, `filter_gender`).
+    - `GET /api/analytics` – aggregate clicks per feature and per day for the charts.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Tracking model**
+  - Every time a filter or chart is used, `/api/track` inserts a `FeatureClick` row with:
+    - `userId`, `featureName`, `timestamp`.
+  - `/api/analytics` groups `FeatureClick` by **feature name** (for the bar chart) and by **day** (for the line chart), within the selected date range.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 3. Seeding data
+
+The seed script creates:
+
+- Several demo users with different ages/genders.
+- A few months of synthetic click data for:
+  - `date_picker`, `filter_age`, `chart_bar`, `filter_gender`.
+
+Run:
+
+```bash
+npm run seed
+```
+
+You can run this against any database pointed to by `DATABASE_URL`.  
+For production, run it once against the live Postgres instance (or disable it after the first run).
+
+---
+
+## 4. Scaling thought experiment – 1M events/minute
+
+If this dashboard had to handle 1 million events per minute, I would stop writing directly into a single Postgres database. Instead, I would first send every event into a fast message queue (like Kafka). From there, multiple worker services would read events in batches and write them into a database that is built for analytics and can be split across many machines (for example ClickHouse, BigQuery, or a sharded Postgres setup). I would not query raw events on every request; instead, background jobs would keep pre‑calculated summaries (per feature, per day/hour) up to date, and the API would read from these summaries, with an extra cache like Redis in front. This way writes stay cheap and scalable, and the dashboard can stay fast even with very high traffic.
+
+

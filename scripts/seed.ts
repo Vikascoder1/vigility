@@ -1,6 +1,5 @@
 /* eslint-disable no-console */
-import { prisma } from "@/lib/prisma";
-
+import { prisma } from "../lib/prisma";
 const FEATURES = ["date_picker", "filter_age", "chart_bar", "filter_gender"];
 
 async function main() {
@@ -23,15 +22,20 @@ async function main() {
   );
 
   const now = new Date();
-  const daysBack = 90;
+  const daysBack = 120;
   const clicksToCreate: { userId: number; featureName: string; timestamp: Date }[] = [];
 
-  for (let i = 0; i < 180; i += 1) {
-    const user = users[Math.floor(Math.random() * users.length)];
-    const feature = FEATURES[Math.floor(Math.random() * FEATURES.length)];
-    const daysAgo = Math.floor(Math.random() * daysBack);
-    const timestamp = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
-    clicksToCreate.push({ userId: user.id, featureName: feature, timestamp });
+  // Generate a denser, more realistic time series so the line chart looks rich
+  for (let dayOffset = 0; dayOffset < daysBack; dayOffset += 1) {
+    const baseDate = new Date(now.getTime() - dayOffset * 24 * 60 * 60 * 1000);
+    for (const feature of FEATURES) {
+      const clicksToday = 10 + Math.floor(Math.random() * 16); // 10–25 clicks per feature per day
+      for (let i = 0; i < clicksToday; i += 1) {
+        const user = users[Math.floor(Math.random() * users.length)];
+        const timestamp = new Date(baseDate.getTime() + Math.floor(Math.random() * 24) * 60 * 60 * 1000);
+        clicksToCreate.push({ userId: user.id, featureName: feature, timestamp });
+      }
+    }
   }
 
   await prisma.featureClick.createMany({

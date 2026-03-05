@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { parseAgeRange, DEFAULT_FILTERS, AgeRange, GenderFilter } from "@/lib/filters";
+import { DEFAULT_FILTERS } from "@/lib/filters";
 
 const analyticsSchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  ageRange: z.enum(["<18", "18-40", ">40", "all"]).optional(),
-  gender: z.enum(["Male", "Female", "Other", "all"]).optional(),
+  ageRange: z.enum(["<18", "18-40", ">40", "all"]).optional(), // accepted but not used in aggregation
+  gender: z.enum(["Male", "Female", "Other", "all"]).optional(), // accepted but not used in aggregation
   featureName: z.string().optional(),
 });
 
@@ -17,8 +17,8 @@ export async function GET(req: NextRequest) {
     const parsed = analyticsSchema.parse({
       startDate: searchParams.get("startDate") ?? undefined,
       endDate: searchParams.get("endDate") ?? undefined,
-      ageRange: (searchParams.get("ageRange") as AgeRange | null) ?? undefined,
-      gender: (searchParams.get("gender") as GenderFilter | null) ?? undefined,
+      ageRange: searchParams.get("ageRange") ?? undefined,
+      gender: searchParams.get("gender") ?? undefined,
       featureName: searchParams.get("featureName") ?? undefined,
     });
 
@@ -31,27 +31,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Invalid date range" }, { status: 400 });
     }
 
-    const ageRange = parseAgeRange(parsed.ageRange ?? DEFAULT_FILTERS.ageRange);
-    const genderFilter = parsed.gender ?? DEFAULT_FILTERS.gender;
-
-    const whereBase: any = {
+    const whereBase = {
       timestamp: {
         gte: startDate,
         lte: new Date(endDate.getTime() + 24 * 60 * 60 * 1000),
       },
-      user: {},
     };
 
-    if (ageRange) {
-      whereBase.user.age = {
-        gte: ageRange.min,
-        lte: ageRange.max,
-      };
-    }
-
-    if (genderFilter !== "all") {
-      whereBase.user.gender = genderFilter;
-    }
+    const FEATURE_ORDER = ["date_picker", "filter_age", "chart_bar", "filter_gender"] as const;
 
     // Bar chart: total clicks per feature
     const barResults = await prisma.featureClick.groupBy({
@@ -63,12 +50,18 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    const bars = barResults.map((b) => ({
-      featureName: b.featureName,
-      totalClicks: b._count._all,
-    }));
+    const bars = FEATURE_ORDER.map((name) => {
+      const match = barResults.find((b) => b.featureName === name);
+      return {
+        featureName: name,
+        totalClicks: match?._count._all ?? 0,
+      };
+    });
 
-    const selectedFeature = parsed.featureName ?? bars[0]?.featureName ?? null;
+    const selectedFeature =
+      parsed.featureName && FEATURE_ORDER.includes(parsed.featureName as any)
+        ? parsed.featureName
+        : FEATURE_ORDER[0];
 
     let line: { date: string; count: number }[] = [];
 

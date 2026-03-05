@@ -105,8 +105,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-8 sm:px-6">
+      <div className="w-full max-w-md rounded-2xl bg-white px-5 py-6 shadow-lg sm:px-8 sm:py-8">
         <h1 className="text-center text-2xl font-semibold text-slate-900">
           {mode === "login" ? "Welcome back" : "Create an account"}
         </h1>

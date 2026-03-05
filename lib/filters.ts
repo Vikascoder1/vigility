@@ -11,7 +11,7 @@ export type DashboardFilters = {
 export const DEFAULT_FILTERS: DashboardFilters = (() => {
   const end = new Date();
   const start = new Date();
-  start.setDate(end.getDate() - 30);
+  start.setDate(end.getDate() - 90);
 
   const toIsoDate = (d: Date) => d.toISOString().slice(0, 10);
 
