@@ -1,0 +1,30 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int            @id @default(autoincrement())
+  username     String         @unique
+  passwordHash String
+  age          Int
+  gender       String
+  clicks       FeatureClick[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FeatureClick {
+  id          Int      @id @default(autoincrement())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      Int
+  featureName String
+  timestamp   DateTime @default(now())
+}
+
+
