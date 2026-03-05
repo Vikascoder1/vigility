@@ -113,7 +113,7 @@ export default function DashboardPage() {
     }
 
     persistFiltersToCookies(filters);
-    void fetch("/api/track", {
+    await fetch("/api/track", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ featureName: "filters_apply" }),
@@ -126,66 +126,79 @@ export default function DashboardPage() {
   const line = analytics?.line ?? [];
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-6">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <header className="flex items-center justify-between gap-4">
+    <div className="min-h-screen bg-slate-50 px-4 py-4 sm:py-6">
+      <div className="mx-auto max-w-6xl space-y-4 sm:space-y-6">
+        <header className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-slate-900">Product Analytics Dashboard</h1>
             <p className="text-sm text-slate-500">
               Explore how users interact with filters and charts. This dashboard tracks its own usage.
             </p>
           </div>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              router.push("/login");
-            }}
-          >
-            Switch User
-          </Button>
+          <div className="w-full sm:w-auto">
+            <Button
+              className="w-full sm:w-auto"
+              variant="secondary"
+              onClick={() => {
+                router.push("/login");
+              }}
+            >
+              Switch User
+            </Button>
+          </div>
         </header>
 
         <section className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-          <div className="mb-4 flex flex-wrap items-end gap-4">
-            <div className="flex flex-col gap-1">
+          <div className="mb-4 grid grid-cols-1 gap-4 sm:flex sm:flex-wrap sm:items-end">
+            <div className="flex flex-col gap-1 sm:w-auto">
               <label className="text-xs font-medium text-slate-600">Start Date</label>
               <input
                 type="date"
                 value={filters.startDate}
-                onChange={(e) =>
-                  setFilters((f) => ({
-                    ...f,
-                    startDate: e.target.value,
-                  }))
-                }
+                onChange={(e) => {
+                  const next = { ...filters, startDate: e.target.value };
+                  setFilters(next);
+                  void fetch("/api/track", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ featureName: "date_picker" }),
+                  }).catch(() => {});
+                }}
                 className="rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 sm:w-auto">
               <label className="text-xs font-medium text-slate-600">End Date</label>
               <input
                 type="date"
                 value={filters.endDate}
-                onChange={(e) =>
-                  setFilters((f) => ({
-                    ...f,
-                    endDate: e.target.value,
-                  }))
-                }
+                onChange={(e) => {
+                  const next = { ...filters, endDate: e.target.value };
+                  setFilters(next);
+                  void fetch("/api/track", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ featureName: "date_picker" }),
+                  }).catch(() => {});
+                }}
                 className="rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
 
-            <div className="w-40">
+            <div className="sm:w-40">
               <Select
                 label="Age Range"
                 value={filters.ageRange}
-                onChange={(e) =>
-                  setFilters((f) => ({
-                    ...f,
-                    ageRange: e.target.value as AgeRange,
-                  }))
-                }
+                onChange={(e) => {
+                  const value = e.target.value as AgeRange;
+                  const next = { ...filters, ageRange: value };
+                  setFilters(next);
+                  void fetch("/api/track", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ featureName: "filter_age" }),
+                  }).catch(() => {});
+                }}
               >
                 <option value="all">All</option>
                 <option value="<18">{"<18"}</option>
@@ -194,16 +207,20 @@ export default function DashboardPage() {
               </Select>
             </div>
 
-            <div className="w-40">
+            <div className="sm:w-40">
               <Select
                 label="Gender"
                 value={filters.gender}
-                onChange={(e) =>
-                  setFilters((f) => ({
-                    ...f,
-                    gender: e.target.value as GenderFilter,
-                  }))
-                }
+                onChange={(e) => {
+                  const value = e.target.value as GenderFilter;
+                  const next = { ...filters, gender: value };
+                  setFilters(next);
+                  void fetch("/api/track", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ featureName: "filter_gender" }),
+                  }).catch(() => {});
+                }}
               >
                 <option value="all">All</option>
                 <option value="Male">Male</option>
@@ -212,8 +229,8 @@ export default function DashboardPage() {
               </Select>
             </div>
 
-            <div className="ml-auto">
-              <Button onClick={handleApply} loading={loading}>
+            <div className="sm:ml-auto">
+              <Button className="w-full sm:w-auto" onClick={handleApply} loading={loading}>
                 Apply
               </Button>
             </div>
@@ -226,10 +243,10 @@ export default function DashboardPage() {
           )}
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2">
-          <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-            <h2 className="mb-2 text-sm font-semibold text-slate-800">Total Clicks</h2>
-            <div className="h-72">
+        <section className="grid gap-4 md:gap-6 md:grid-cols-2">
+          <div className="rounded-xl bg-white px-4 py-4 sm:px-6 sm:py-5 shadow-sm ring-1 ring-slate-100">
+            <h2 className="mb-4 text-base font-semibold text-slate-800">Total Clicks</h2>
+            <div className="h-72 sm:h-80">
               {bars.length === 0 ? (
                 <div className="flex h-full items-center justify-center text-sm text-slate-400">
                   No data for selected filters.
@@ -237,24 +254,32 @@ export default function DashboardPage() {
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
+                    layout="vertical"
                     data={bars}
-                    margin={{ top: 10, right: 10, left: 0, bottom: 30 }}
-                    onClick={(state) => {
+                    margin={{ top: 10, right: 20, left: 40, bottom: 10 }}
+                    barCategoryGap="20%"
+                    barSize={28}
+                    onClick={async (state) => {
                       const feature =
                         (state?.activePayload && state.activePayload[0]?.payload?.featureName) || null;
                       if (!feature) return;
                       setSelectedFeature(feature);
-                      void fetch("/api/track", {
+                      await fetch("/api/track", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ featureName: "chart_bar" }),
+                        body: JSON.stringify({ featureName: feature }),
                       }).catch(() => {});
-                      void fetchAnalytics(filters, feature);
+                      await fetchAnalytics(filters, feature);
                     }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="featureName" angle={-20} textAnchor="end" height={50} />
-                    <YAxis allowDecimals={false} />
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                    <XAxis type="number" allowDecimals={false} />
+                    <YAxis
+                      type="category"
+                      dataKey="featureName"
+                      width={100}
+                      tick={{ fontSize: 12 }}
+                    />
                     <Tooltip />
                     <Bar
                       dataKey="totalClicks"
@@ -268,24 +293,24 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-            <h2 className="mb-1 text-sm font-semibold text-slate-800">Clicks Daily</h2>
-            <p className="mb-2 text-xs text-slate-500">
+          <div className="rounded-xl bg-white px-4 py-4 sm:px-6 sm:py-5 shadow-sm ring-1 ring-slate-100">
+            <h2 className="mb-1 text-base font-semibold text-slate-800">Clicks Daily</h2>
+            <p className="mb-3 text-xs text-slate-500">
               {selectedFeature
                 ? `Selected feature: ${selectedFeature}`
                 : "Select a bar to see its daily trend."}
             </p>
-            <div className="h-72">
+            <div className="h-72 sm:h-80">
               {line.length === 0 ? (
                 <div className="flex h-full items-center justify-center text-sm text-slate-400">
                   No time-series data for this feature.
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={line} margin={{ top: 10, right: 10, left: 0, bottom: 30 }}>
+                  <LineChart data={line} margin={{ top: 10, right: 20, left: 10, bottom: 30 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="date" angle={-20} textAnchor="end" height={50} />
-                    <YAxis allowDecimals={false} />
+                    <XAxis dataKey="date" angle={-20} textAnchor="end" height={50} tick={{ fontSize: 11 }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                     <Tooltip />
                     <Line
                       type="monotone"
