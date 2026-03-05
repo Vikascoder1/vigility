@@ -7,32 +7,50 @@ It tracks its **own usage**: every filter change and chart click is stored and t
 
 ## 1. Run the app locally
 
-### Prerequisites
+### Option A – Simple local setup (SQLite, recommended)
+
+**Prerequisites**
 
 - Node.js 18+
-- A PostgreSQL database (Neon, Vercel Postgres, etc.)
 
-### Environment
+**Environment**
 
 Create `.env` in the `vigility` folder:
+
+```bash
+DATABASE_URL="file:./dev.db"
+JWT_SECRET="your-long-random-secret"
+```
+
+**Install, migrate, seed, run**
+
+```bash
+cd vigility
+
+npm install
+npx prisma migrate dev --name init-sqlite
+npm run seed
+npm run dev
+```
+
+Visit `http://localhost:3000/login`, register a user, and you’ll be redirected to the dashboard.
+
+### Option B – Local against Postgres (same as production)
+
+If you prefer to run locally against a real Postgres instance (e.g. Neon, Vercel Postgres):
 
 ```bash
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DBNAME?sslmode=require"
 JWT_SECRET="your-long-random-secret"
 ```
 
-### Install, migrate, seed, run
+Then:
 
 ```bash
-cd vigility
-
-npm install
 npx prisma migrate dev --name init
 npm run seed
 npm run dev
 ```
-
-Visit `http://localhost:3000/login`, register a user, and you’ll be redirected to the dashboard.
 
 ---
 
