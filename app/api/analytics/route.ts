@@ -59,9 +59,7 @@ export async function GET(req: NextRequest) {
       where: whereBase,
       _count: { _all: true },
       orderBy: {
-        _count: {
-          _all: "desc",
-        },
+        featureName: "asc",
       },
     });
 
